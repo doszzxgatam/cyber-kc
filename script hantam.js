@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Team kc</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Consolas,monospace;
+}
+
+body{
+    background:#000;
+    color:#00ff66;
+    overflow-x:hidden;
+    overflow-y:auto;
+}
+
+canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    z-index:-1;
+}
+
+header{
+    text-align:center;
+    padding:30px;
+}
+
+header h1{
+    font-size:45px;
+    text-shadow:0 0 15px #00ff66;
+}
+
+.container{
+    width:90%;
+    max-width:1100px;
+    margin:auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:rgba(0,0,0,.55);
+    border:1px solid #00ff66;
+    border-radius:12px;
+    padding:20px;
+    backdrop-filter:blur(8px);
+    box-shadow:0 0 15px #00ff6633;
+}
+
+.card h2{
+    margin-bottom:15px;
+}
+
+#clock{
+    font-size:35px;
+}
+
+#terminal{
+    height:220px;
+    overflow:auto;
+    background:#050505;
+    padding:10px;
+    border-radius:8px;
+}
+
+input{
+    width:100%;
+    background:black;
+    border:1px solid #00ff66;
+    color:#00ff66;
+    padding:10px;
+    margin-top:10px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    background:#00ff66;
+    color:black;
+    border:none;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    box-shadow:0 0 20px #00ff66;
+}
+
+progress{
+    width:100%;
+    height:18px;
+    accent-color:#00ff66;
+}
+
+/* ===== LOADING SCREEN ===== */
+
+#loader{
+position:fixed;
+inset:0;
+background:#000;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:99999;
+overflow:hidden;
+}
+
+.glitch{
+
+font-size:65px;
+font-weight:bold;
+color:#00ff66;
+position:relative;
+text-shadow:0 0 15px #00ff66;
+animation:flicker .15s infinite;
+
+}
+
+.glitch::before,
+.glitch::after{
+
+content:attr(data-text);
+position:absolute;
+left:0;
+top:0;
+
+}
+
+.glitch::before{
+
+left:-2px;
+color:#ff0044;
+clip-path:inset(0 0 45% 0);
+animation:glitch1 .2s infinite;
+
+}
+
+.glitch::after{
+
+left:2px;
+color:#00ffff;
+clip-path:inset(55% 0 0 0);
+animation:glitch2 .2s infinite;
+
+}
+
+.status{
+
+margin-top:30px;
+font-size:20px;
+color:#00ff66;
+letter-spacing:3px;
+
+}
+
+.bar{
+    margin-top:25px;
+    width:min(420px,90%);
+    height:16px;
+    border:1px solid #00ff66;
+    overflow:hidden;
+}
+
+#fill{
+
+width:0%;
+height:100%;
+background:#00ff66;
+box-shadow:0 0 20px #00ff66;
+
+}
+
+#percent{
+
+margin-top:18px;
+font-size:24px;
+
+}
+
+.scanline{
+
+position:absolute;
+width:100%;
+height:100%;
+pointer-events:none;
+background:repeating-linear-gradient(
+0deg,
+transparent,
+transparent 3px,
+rgba(0,255,100,.05) 4px
+);
+
+animation:scan .15s linear infinite;
+}
+
+@keyframes glitch1{
+
+0%{transform:translate(0);}
+20%{transform:translate(-4px,2px);}
+40%{transform:translate(3px,-2px);}
+60%{transform:translate(-3px,1px);}
+80%{transform:translate(2px,-1px);}
+100%{transform:translate(0);}
+
+}
+
+@keyframes glitch2{
+
+0%{transform:translate(0);}
+20%{transform:translate(4px,-2px);}
+40%{transform:translate(-3px,2px);}
+60%{transform:translate(3px,-1px);}
+80%{transform:translate(-2px,1px);}
+100%{transform:translate(0);}
+
+}
+
+@keyframes flicker{
+
+0%,100%{opacity:1;}
+50%{opacity:.92;}
+70%{opacity:.7;}
+
+}
+
+@keyframes scan{
+
+0%{transform:translateY(-100%);}
+100%{transform:translateY(100%);}
+
+}
+header,
+.container{
+    display:none;
+}
+@media (max-width:600px){
+
+    header h1{
+        font-size:30px;
+    }
+
+    .glitch{
+        font-size:38px;
+    }
+
+    .container{
+        grid-template-columns:1fr;
+        width:95%;
+    }
+
+    .card{
+        padding:15px;
+    }
+
+    #clock{
+        font-size:28px;
+    }
+
+    #terminal{
+        height:180px;
+    }
+
+}
+</style>
+
+</head>
+
+<body>
+<div id="loader">
+
+    <div class="scanline"></div>
+
+    <div class="glitch" data-text="CYBER TEAM ₭₵">
+       CYBER TEAM ₭₵
+    </div>
+
+    <div class="status" id="status">
+        INITIALIZING SYSTEM...
+    </div>
+
+    <div class="bar">
+        <div id="fill"></div>
+    </div>
+
+    <div id="percent">0%</div>
+
+</div>
+
+<canvas id="matrix"></canvas>
+
+<header>
+<h1>CYBER TEAM ₭₵</h1>
+<p>Demo antarmuka bertema hacker kc</p>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2>Jam Digital</h2>
+<div id="clock"></div>
+</div>
+
+<div class="card">
+<h2>Status Sistem (Simulasi)</h2>
+
+CPU
+<progress id="cpu" max="100" value="10"></progress><br><br>
+
+RAM
+<progress id="ram" max="100" value="40"></progress><br><br>
+
+NETWORK
+<progress id="net" max="100" value="70"></progress>
+
+</div>
+
+<div class="card">
+
+<h2>Terminal</h2>
+
+<div id="terminal"></div>
+
+<input id="cmd" placeholder="ketik help lalu Enter">
+
+</div>
+
+</div>
+
+<script>
+
+// MATRIX
+
+const canvas=document.getElementById("matrix");
+const ctx=canvas.getContext("2d");
+
+canvas.width=innerWidth;
+canvas.height=innerHeight;
+
+const letters="アカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const font=16;
+const cols=Math.floor(canvas.width/font);
+
+const drops=[];
+
+for(let i=0;i<cols;i++) drops[i]=1;
+
+function matrix(){
+
+ctx.fillStyle="rgba(0,0,0,0.05)";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ctx.fillStyle="#00ff66";
+ctx.font=font+"px monospace";
+
+for(let i=0;i<drops.length;i++){
+
+const text=letters[Math.floor(Math.random()*letters.length)];
+
+ctx.fillText(text,i*font,drops[i]*font);
+
+if(drops[i]*font>canvas.height && Math.random()>0.98)
+drops[i]=0;
+
+drops[i]++;
+
+}
+
+}
+
+setInterval(matrix,35);
+
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    ctx.font = font + "px monospace";
+});
+
+// CLOCK
+
+document.getElementById("clock").textContent =
+new Date().toLocaleTimeString("id-ID");
+
+setInterval(()=>{
+    document.getElementById("clock").textContent =
+    new Date().toLocaleTimeString("id-ID");
+},1000);
+
+// SYSTEM
+
+const cpu = document.getElementById("cpu");
+const ram = document.getElementById("ram");
+const net = document.getElementById("net");
+setInterval(() => {
+    cpu.value = Math.random() * 100;
+    ram.value = Math.random() * 100;
+    net.value = Math.random() * 100;
+}, 1500);
+
+// TERMINAL
+
+const terminal=document.getElementById("terminal");
+const cmd=document.getElementById("cmd");
+
+function print(text){
+terminal.innerHTML+=text+"<br>";
+terminal.scrollTop=terminal.scrollHeight;
+}
+
+print("Cyber Terminal Ready");
+print("Ketik: help");
+
+cmd.addEventListener("keydown",e=>{
+
+if(e.key==="Enter"){
+
+let c=cmd.value;
+
+print("> "+c);
+
+switch(c){
+
+case "help":
+print("=== COMMAND LIST ===");
+print("help      - Daftar command");
+print("time      - Menampilkan waktu");
+print("date      - Menampilkan tanggal");
+print("zevan     - menampilkan kaysa");
+print("about     - Informasi website");
+print("clear     - Membersihkan terminal");
+print("matrix    - Status efek Matrix");
+print("cpu       - Status CPU");
+print("ram       - Status RAM");
+print("network   - Status jaringan (simulasi)");
+print("ping      - Simulasi ping");
+print("neofetch  - Info sistem");
+print("whoami    - Nama pengguna");
+print("version   - Versi dashboard");
+print("echo teks - Menampilkan teks");
+print("random    - Angka acak");
+print("color     - Mengubah warna neon");
+break;
+
+case "date":
+print(new Date().toLocaleDateString("id-ID"));
+break;
+
+case "zevan":
+print("kaysa love love love love kaysa kaysa Kaysa kaysa");
+print ("cinta ku hanya kaysa aww cinta zevan takkan pernah padamm");
+print("zevan ❤ kaysa");
+print("zevan - status 👇");
+print("Status : salting hampir pingsan");
+break;
+
+case "time":
+print(new Date().toLocaleTimeString("id-ID"));
+break;
+
+case "about":
+print("NASPAD Neon Ultra V2");
+print("Cyber Dashboard Demo");
+break;
+
+case "matrix":
+print("Matrix Engine : ONLINE");
+break;
+
+case "cpu":
+print("CPU : "+Math.floor(Math.random()*100)+"%");
+break;
+
+case "ram":
+print("RAM : "+Math.floor(Math.random()*100)+"%");
+break;
+
+case "network":
+print("DOWNLOAD : "+(50+Math.random()*300).toFixed(1)+" Mbps");
+print("UPLOAD   : "+(20+Math.random()*100).toFixed(1)+" Mbps");
+break;
+
+case "ping":
+print("Pinging localhost...");
+setTimeout(()=>{
+print("Reply from localhost: time="+(Math.random()*5).toFixed(1)+" ms");
+},500);
+break;
+
+case "neofetch":
+print("OS      : NASPAD OS");
+print("Kernel  : 2.0");
+print("Browser : "+navigator.userAgent);
+print("RAM     : 16 GB (Simulasi)");
+break;
+
+case "whoami":
+print("guest");
+break;
+
+case "version":
+print("doszzxhantam V2.0");
+break;
+
+case "random":
+print(Math.floor(Math.random()*100000));
+break;
+
+case "color":
+document.body.style.color="#00ffff";
+print("Neon berubah menjadi cyan.");
+break;
+
+case "clear":
+terminal.innerHTML="";
+break;
+
+default:
+
+if(c.startsWith("echo ")){
+    print(c.substring(5));
+}
+else{
+    print("Command not found.");
+}
+
+}
+
+cmd.value="";
+
+}
+
+});
+const loader = document.getElementById("loader");
+const fill = document.getElementById("fill");
+const percent = document.getElementById("percent");
+const statusText = document.getElementById("status");
+
+const statusList = [
+"INITIALIZING SYSTEM...",
+"LOADING MODULES...",
+"CHECKING SECURITY...",
+"CONNECTING NETWORK...",
+"VERIFYING FILES...",
+"STARTING DASHBOARD...",
+"ACCESS GRANTED"
+];
+
+let p = 0;
+
+const boot = setInterval(() => {
+
+    p++;
+
+    fill.style.width = p + "%";
+    percent.innerHTML = p + "%";
+
+    if(p==15) statusText.innerHTML=statusList[1];
+    if(p==35) statusText.innerHTML=statusList[2];
+    if(p==55) statusText.innerHTML=statusList[3];
+    if(p==75) statusText.innerHTML=statusList[4];
+    if(p==90) statusText.innerHTML=statusList[5];
+    if(p==100) statusText.innerHTML=statusList[6];
+
+    if(p>=100){
+
+        clearInterval(boot);
+
+        loader.style.transition="opacity 1s";
+        loader.style.opacity="0";
+        
+       setTimeout(() => {
+    loader.remove();
+
+    document.querySelector("header").style.display = "block";
+    document.querySelector(".container").style.display = "grid";
+}, 1000);
+
+    }
+
+},35);
+</script>
+
+</body>
+</html>
